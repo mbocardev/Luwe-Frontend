@@ -34,7 +34,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card> 
           <CardContent className="p-4">
             <h2 className="text-xl font-semibold">Propriétés</h2>
             <p className="text-3xl mt-2">{properties.length}</p>
