@@ -1,18 +1,15 @@
 'use client'
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { supabase } from "@/lib/supabaseClient"
 
-export default function OwnerDashboard() {
+export default function OwnerDashboardPage() {
+  const [properties, setProperties] = useState<any[]>([])
+  const [issues, setIssues] = useState<any[]>([])
   const router = useRouter()
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
-  }
 
   useEffect(() => {
   const checkAuth = async () => {
@@ -24,20 +21,52 @@ export default function OwnerDashboard() {
   checkAuth()
   }, [])
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Tableau de bord Propriétaire</h1>
-        <Button variant="destructive" onClick={handleLogout}>
-          Se déconnecter
-        </Button>
-      </div>
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: user } = await supabase.auth.getUser()
+      const userId = user.user?.id
 
-      <Card>
-        <CardContent className="p-4">
-          Bienvenue sur votre espace propriétaire. Consultez vos biens, locataires et incidents ici.
-        </CardContent>
-      </Card>
+      const { data: props } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("owner_id", userId)
+
+      const { data: issueData } = await supabase
+        .from("issues")
+        .select("*")
+        .in("property_id", props?.map(p => p.id) || [])
+
+      setProperties(props || [])
+      setIssues(issueData || [])
+    }
+    fetchData()
+  }, [])
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-foreground">Tableau de bord Propriétaire</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <h2 className="text-xl font-semibold text-foreground">Mes propriétés</h2>
+            <p className="text-3xl mt-2 text-primary">{properties.length}</p>
+            <Button className="mt-4" onClick={() => router.push("/owner/properties")}>
+              Voir les propriétés
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <h2 className="text-xl font-semibold text-foreground">Incidents en cours</h2>
+            <p className="text-3xl mt-2 text-primary">{issues.length}</p>
+            <Button className="mt-4" onClick={() => router.push("/owner/issues")}>
+              Gérer les incidents
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
